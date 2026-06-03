@@ -1,6 +1,7 @@
 import type { CategoryRecord } from "@/lib/repositories/categories";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { localizeCategoryName } from "@/lib/utils/localization";
 
 interface CategoryPickerProps {
   categories: CategoryRecord[];
@@ -44,9 +45,9 @@ export function CategoryPicker({ categories, name, type, selectedId }: CategoryP
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-semibold text-white"
             style={{ backgroundColor: category.color || "#059669" }}
           >
-            {(category.icon || category.name).slice(0, 2).toUpperCase()}
+            {(category.icon || localizeCategoryName(category.name)).slice(0, 2).toUpperCase()}
           </span>
-          <span className="min-w-0 flex-1 truncate">{category.name}</span>
+          <span className="min-w-0 flex-1 truncate">{localizeCategoryName(category.name)}</span>
           <Badge variant={category.type === "income" ? "success" : "secondary"}>
             {category.type === "income" ? "Pemasukan" : "Pengeluaran"}
           </Badge>

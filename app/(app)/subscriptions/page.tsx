@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { requireOnboardedUser } from "@/lib/auth/session";
 import { listSubscriptions } from "@/lib/repositories/subscriptions";
+import { DEFAULT_CURRENCY } from "@/lib/constants/app";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSubscriptionAction, deleteSubscriptionAction, updateSubscriptionAction } from "./actions";
 
@@ -32,12 +33,9 @@ export default async function SubscriptionsPage({ searchParams }: SubscriptionsP
   const user = await requireOnboardedUser();
   const params = searchParams ? await searchParams : {};
   const supabase = await createSupabaseServerClient();
-  const [{ data: subscriptions, error }, { data: settings }] = await Promise.all([
-    listSubscriptions(supabase, user.id),
-    supabase.from("user_settings").select("currency").eq("user_id", user.id).maybeSingle()
-  ]);
+  const { data: subscriptions, error } = await listSubscriptions(supabase, user.id);
   const rows = subscriptions || [];
-  const currency = settings?.currency || "IDR";
+  const currency = DEFAULT_CURRENCY;
   const activeRows = rows.filter((item) => item.status === "active");
   const unusedCount = rows.filter((item) => item.unused_flag).length;
   const monthlyEquivalent = activeRows.reduce((total, item) => {

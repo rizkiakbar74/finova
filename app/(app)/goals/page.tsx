@@ -13,6 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { requireOnboardedUser } from "@/lib/auth/session";
 import { listSavingsGoals } from "@/lib/repositories/goals";
 import { listWallets } from "@/lib/repositories/wallets";
+import { DEFAULT_CURRENCY } from "@/lib/constants/app";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   createGoalAction,
@@ -52,16 +53,15 @@ export default async function GoalsPage({ searchParams }: GoalsPageProps) {
   const params = searchParams ? await searchParams : {};
   const supabase = await createSupabaseServerClient();
 
-  const [{ data: goals, error: goalsError }, { data: wallets, error: walletError }, { data: settings }] =
+  const [{ data: goals, error: goalsError }, { data: wallets, error: walletError }] =
     await Promise.all([
       listSavingsGoals(supabase, user.id),
-      listWallets(supabase, user.id),
-      supabase.from("user_settings").select("currency").eq("user_id", user.id).maybeSingle()
+      listWallets(supabase, user.id)
     ]);
 
   const goalRows = goals || [];
   const activeWallets = (wallets || []).filter((wallet) => !wallet.is_archived);
-  const currency = settings?.currency || activeWallets[0]?.currency || "IDR";
+  const currency = DEFAULT_CURRENCY;
   const activeGoals = goalRows.filter((goal) => goal.status === "active");
   const completedGoals = goalRows.filter((goal) => goal.status === "completed" || goal.progress >= 100);
   const targetTotal = activeGoals.reduce((total, goal) => total + Number(goal.target_amount), 0);
@@ -241,7 +241,7 @@ export default async function GoalsPage({ searchParams }: GoalsPageProps) {
                         <option value="">Tanpa dompet</option>
                         {activeWallets.map((wallet) => (
                           <option key={wallet.id} value={wallet.id}>
-                            {wallet.name} - {wallet.currency}
+                            {wallet.name} - IDR
                           </option>
                         ))}
                       </select>
@@ -271,7 +271,7 @@ export default async function GoalsPage({ searchParams }: GoalsPageProps) {
                         {goal.contributions.slice(0, 6).map((contribution) => (
                           <div key={contribution.id} className="flex flex-col justify-between gap-3 py-3 sm:flex-row sm:items-center">
                             <div className="min-w-0">
-                              <p className="font-medium text-slate-950">{formatMoney(contribution.amount, contribution.wallet?.currency || currency)}</p>
+                              <p className="font-medium text-slate-950">{formatMoney(contribution.amount, currency)}</p>
                               <p className="mt-1 text-sm text-muted-foreground">
                                 <CalendarDays className="mr-1 inline h-3.5 w-3.5" />
                                 {contribution.contribution_date} - {contribution.wallet?.name || "Tanpa dompet"}

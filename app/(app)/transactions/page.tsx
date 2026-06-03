@@ -15,24 +15,15 @@ import { listTransactions, type TransactionRecord } from "@/lib/repositories/tra
 import { listWallets, type WalletRecord } from "@/lib/repositories/wallets";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { transactionFilterSchema, type TransactionFilters } from "@/lib/validators/finance.schema";
+import { formatIdr, localizeCategoryName } from "@/lib/utils/localization";
 import { deleteTransactionAction, updateTransactionAction } from "./actions";
 
 interface TransactionsPageProps {
   searchParams?: Promise<Record<string, string | undefined>>;
 }
 
-function formatMoney(value: number | string, currency: string, type: "income" | "expense") {
-  const formatted = new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 2
-  }).format(Number(value));
-
-  return `${type === "income" ? "+" : "-"}${formatted}`;
-}
-
-function transactionCurrency(transaction: TransactionRecord) {
-  return transaction.wallet?.currency || "IDR";
+function formatTransactionMoney(value: number | string, type: "income" | "expense") {
+  return `${type === "income" ? "+" : "-"}${formatIdr(value)}`;
 }
 
 type RawTransactionRecord = Omit<TransactionRecord, "wallet" | "category"> & {
@@ -114,7 +105,7 @@ function TransactionFiltersForm({
           <option value="all">Semua kategori</option>
           {activeCategories.map((category) => (
             <option key={category.id} value={category.id}>
-              {category.name}
+              {localizeCategoryName(category.name)}
             </option>
           ))}
         </select>
@@ -163,7 +154,6 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
   const expenseTotal = transactionRows
     .filter((transaction) => transaction.type === "expense" && transaction.status === "posted")
     .reduce((total, transaction) => total + Number(transaction.amount), 0);
-  const primaryCurrency = activeWallets[0]?.currency || transactionRows[0]?.wallet?.currency || "IDR";
 
   return (
     <div className="space-y-6">
@@ -189,14 +179,14 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
         <KpiCard title="Transaksi" value={String(transactionRows.length)} description="Tampilan sesuai filter" icon={CreditCard} />
         <KpiCard
           title="Pemasukan tercatat"
-          value={new Intl.NumberFormat("id-ID", { style: "currency", currency: primaryCurrency }).format(incomeTotal)}
+          value={formatIdr(incomeTotal)}
           description="Sesuai filter"
           icon={ArrowUp}
           tone="success"
         />
         <KpiCard
           title="Pengeluaran tercatat"
-          value={new Intl.NumberFormat("id-ID", { style: "currency", currency: primaryCurrency }).format(expenseTotal)}
+          value={formatIdr(expenseTotal)}
           description="Sesuai filter"
           icon={ArrowDown}
           tone="danger"
@@ -253,7 +243,7 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="truncate font-semibold text-slate-950">
-                          {transaction.merchant || transaction.category?.name || "Transaksi"}
+                          {transaction.merchant || localizeCategoryName(transaction.category?.name) || "Transaksi"}
                         </p>
                         <Badge variant={transaction.type === "income" ? "success" : "danger"}>
                           {transaction.type === "income" ? "Pemasukan" : "Pengeluaran"}
@@ -264,7 +254,7 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
                       </div>
                       <p className="mt-1 text-sm text-muted-foreground">
                         {transaction.transaction_date} - {transaction.wallet?.name || "Dompet"} -{" "}
-                        {transaction.category?.name || "Kategori"}
+                        {localizeCategoryName(transaction.category?.name)}
                       </p>
                     </div>
                   </div>
@@ -273,7 +263,7 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
                       transaction.type === "income" ? "text-emerald-700" : "text-red-600"
                     }`}
                   >
-                    {formatMoney(transaction.amount, transactionCurrency(transaction), transaction.type)}
+                    {formatTransactionMoney(transaction.amount, transaction.type)}
                   </p>
                 </div>
 
@@ -324,7 +314,7 @@ export default async function TransactionsPage({ searchParams }: TransactionsPag
                     >
                       {activeCategories.map((category) => (
                         <option key={category.id} value={category.id}>
-                          {category.name} - {category.type === "income" ? "Pemasukan" : "Pengeluaran"}
+                          {localizeCategoryName(category.name)} - {category.type === "income" ? "Pemasukan" : "Pengeluaran"}
                         </option>
                       ))}
                     </select>

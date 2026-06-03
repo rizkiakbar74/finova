@@ -1,6 +1,5 @@
 import {
   Archive,
-  CircleDollarSign,
   FolderKanban,
   Plus,
   Save,
@@ -20,6 +19,8 @@ import { Label } from "@/components/ui/label";
 import { requireOnboardedUser } from "@/lib/auth/session";
 import { listCategories } from "@/lib/repositories/categories";
 import { listWallets } from "@/lib/repositories/wallets";
+import { DEFAULT_CURRENCY } from "@/lib/constants/app";
+import { formatIdr, localizeCategoryName } from "@/lib/utils/localization";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   createCategoryAction,
@@ -51,36 +52,25 @@ const categoryTypes = [
   { value: "expense", label: "Pengeluaran" }
 ];
 
-function formatMoney(value: number | string, currency: string) {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 2
-  }).format(Number(value));
-}
-
 export default async function WalletsPage({ searchParams }: WalletsPageProps) {
   const user = await requireOnboardedUser();
   const params = searchParams ? await searchParams : {};
   const supabase = await createSupabaseServerClient();
 
-  const [{ data: wallets, error: walletError }, { data: categories, error: categoryError }, { data: settings }] =
+  const [{ data: wallets, error: walletError }, { data: categories, error: categoryError }] =
     await Promise.all([
       listWallets(supabase, user.id),
-      listCategories(supabase, user.id),
-      supabase.from("user_settings").select("currency").eq("user_id", user.id).maybeSingle()
+      listCategories(supabase, user.id)
     ]);
 
   const walletRows = wallets || [];
   const categoryRows = categories || [];
-  const primaryCurrency = settings?.currency || walletRows[0]?.currency || "IDR";
+  const primaryCurrency = DEFAULT_CURRENCY;
   const activeWallets = walletRows.filter((wallet) => !wallet.is_archived);
   const archivedWallets = walletRows.filter((wallet) => wallet.is_archived);
   const activeCategories = categoryRows.filter((category) => !category.is_archived);
   const customCategories = categoryRows.filter((category) => !category.is_default);
-  const totalOpeningBalance = activeWallets
-    .filter((wallet) => wallet.currency === primaryCurrency)
-    .reduce((total, wallet) => total + Number(wallet.initial_balance), 0);
+  const totalOpeningBalance = activeWallets.reduce((total, wallet) => total + Number(wallet.initial_balance), 0);
 
   return (
     <div className="space-y-6">
@@ -112,9 +102,9 @@ export default async function WalletsPage({ searchParams }: WalletsPageProps) {
         />
         <KpiCard
           title={`Saldo awal (${primaryCurrency})`}
-          value={formatMoney(totalOpeningBalance, primaryCurrency)}
+          value={formatIdr(totalOpeningBalance)}
           description="Dari dompet aktif"
-          icon={CircleDollarSign}
+          icon={WalletCards}
         />
         <KpiCard
           title="Kategori aktif"
@@ -158,7 +148,7 @@ export default async function WalletsPage({ searchParams }: WalletsPageProps) {
                           </div>
                           <p className="mt-1 text-sm text-muted-foreground">
                             {walletTypes.find((type) => type.value === wallet.type)?.label || wallet.type} -{" "}
-                            {formatMoney(wallet.initial_balance, wallet.currency)}
+                            {formatIdr(wallet.initial_balance)}
                           </p>
                         </div>
                       </div>
@@ -201,7 +191,7 @@ export default async function WalletsPage({ searchParams }: WalletsPageProps) {
                         <select
                           id={`wallet-currency-${wallet.id}`}
                           name="currency"
-                          defaultValue={wallet.currency}
+                          defaultValue={DEFAULT_CURRENCY}
                           className="flex h-11 w-full rounded-xl border border-input bg-white px-3 py-2 text-sm text-slate-950 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
                           {currencies.map((currency) => (
@@ -288,7 +278,7 @@ export default async function WalletsPage({ searchParams }: WalletsPageProps) {
                   <select
                     id="new-wallet-currency"
                     name="currency"
-                    defaultValue={primaryCurrency}
+                    defaultValue={DEFAULT_CURRENCY}
                     className="flex h-11 w-full rounded-xl border border-input bg-white px-3 py-2 text-sm text-slate-950 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     {currencies.map((currency) => (
@@ -399,11 +389,11 @@ export default async function WalletsPage({ searchParams }: WalletsPageProps) {
                           className="flex h-10 w-10 items-center justify-center rounded-xl text-xs font-semibold text-white shadow-sm"
                           style={{ backgroundColor: category.color || "#059669" }}
                         >
-                          {(category.icon || category.name).slice(0, 2).toUpperCase()}
+                          {(category.icon || localizeCategoryName(category.name)).slice(0, 2).toUpperCase()}
                         </span>
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
-                            <p className="font-semibold text-slate-950">{category.name}</p>
+                            <p className="font-semibold text-slate-950">{localizeCategoryName(category.name)}</p>
                             <Badge variant={category.type === "income" ? "success" : "secondary"}>
                               {category.type === "income" ? "Pemasukan" : "Pengeluaran"}
                             </Badge>
@@ -421,7 +411,7 @@ export default async function WalletsPage({ searchParams }: WalletsPageProps) {
                         <Input
                           id={`category-name-${category.id}`}
                           name="name"
-                          defaultValue={category.name}
+                          defaultValue={localizeCategoryName(category.name)}
                           maxLength={60}
                           required
                         />

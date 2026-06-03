@@ -13,6 +13,7 @@ import { requireOnboardedUser } from "@/lib/auth/session";
 import { listCategories } from "@/lib/repositories/categories";
 import { listRecurringBills } from "@/lib/repositories/recurring-bills";
 import { listWallets } from "@/lib/repositories/wallets";
+import { DEFAULT_CURRENCY } from "@/lib/constants/app";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createRecurringBillAction, deleteRecurringBillAction, updateRecurringBillAction } from "./actions";
 
@@ -34,18 +35,17 @@ export default async function RecurringBillsPage({ searchParams }: RecurringBill
   const user = await requireOnboardedUser();
   const params = searchParams ? await searchParams : {};
   const supabase = await createSupabaseServerClient();
-  const [{ data: bills, error: billsError }, { data: wallets }, { data: categories }, { data: settings }] =
+  const [{ data: bills, error: billsError }, { data: wallets }, { data: categories }] =
     await Promise.all([
       listRecurringBills(supabase, user.id),
       listWallets(supabase, user.id),
-      listCategories(supabase, user.id),
-      supabase.from("user_settings").select("currency").eq("user_id", user.id).maybeSingle()
+      listCategories(supabase, user.id)
     ]);
 
   const billRows = bills || [];
   const activeWallets = (wallets || []).filter((wallet) => !wallet.is_archived);
   const expenseCategories = (categories || []).filter((category) => category.type === "expense" && !category.is_archived);
-  const currency = settings?.currency || activeWallets[0]?.currency || "IDR";
+  const currency = DEFAULT_CURRENCY;
   const activeBills = billRows.filter((bill) => bill.status === "active");
   const overdueBills = billRows.filter((bill) => bill.status === "overdue" || bill.next_due_date < new Date().toISOString().slice(0, 10));
   const monthlyEquivalent = activeBills.reduce((total, bill) => {
@@ -139,7 +139,7 @@ export default async function RecurringBillsPage({ searchParams }: RecurringBill
                       {bill.frequency === "weekly" ? "Mingguan" : bill.frequency === "monthly" ? "Bulanan" : "Tahunan"} - jatuh tempo {bill.next_due_date} - {bill.category?.name || "Tanpa kategori"}
                     </p>
                   </div>
-                  <p className="font-semibold text-slate-950">{formatMoney(bill.amount, bill.wallet?.currency || currency)}</p>
+                  <p className="font-semibold text-slate-950">{formatMoney(bill.amount, currency)}</p>
                 </div>
                 <form action={updateRecurringBillAction} className="grid gap-3 lg:grid-cols-12">
                   <input type="hidden" name="id" value={bill.id} />

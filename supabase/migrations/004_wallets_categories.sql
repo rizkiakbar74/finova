@@ -8,7 +8,7 @@ create table if not exists public.wallets (
   type text not null
     check (type in ('cash', 'bank', 'e_wallet', 'credit_card', 'investment', 'other')),
   initial_balance numeric(14,2) not null default 0,
-  currency text not null default 'USD',
+  currency text not null default 'IDR',
   color text,
   icon text,
   is_archived boolean not null default false,

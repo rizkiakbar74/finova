@@ -2,13 +2,14 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, CalendarDays, CircleDollarSign, Save, WalletCards } from "lucide-react";
+import { ArrowDown, ArrowUp, CalendarDays, ReceiptText, Save, WalletCards } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { CategoryRecord } from "@/lib/repositories/categories";
 import type { WalletRecord } from "@/lib/repositories/wallets";
 import { cn } from "@/lib/utils";
+import { localizeCategoryName } from "@/lib/utils/localization";
 
 interface AddTransactionFormProps {
   wallets: WalletRecord[];
@@ -64,8 +65,7 @@ export function AddTransactionForm({ wallets, categories, defaultDate }: AddTran
         return;
       }
 
-      router.push("/transactions?message=Transaksi%20berhasil%20dibuat.");
-      router.refresh();
+      router.replace("/transactions?message=Transaksi%20berhasil%20dibuat.");
     });
   }
 
@@ -128,7 +128,7 @@ export function AddTransactionForm({ wallets, categories, defaultDate }: AddTran
       <div className="space-y-2">
         <Label htmlFor="amount">Jumlah</Label>
         <div className="relative">
-          <CircleDollarSign className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+          <ReceiptText className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
           <Input
             id="amount"
             name="amount"
@@ -170,9 +170,9 @@ export function AddTransactionForm({ wallets, categories, defaultDate }: AddTran
                     className="mb-2 flex h-10 w-10 items-center justify-center rounded-2xl text-xs font-semibold text-white"
                     style={{ backgroundColor: category.color || "#059669" }}
                   >
-                    {(category.icon || category.name).slice(0, 2).toUpperCase()}
+                    {(category.icon || localizeCategoryName(category.name)).slice(0, 2).toUpperCase()}
                   </span>
-                  <span className="line-clamp-2">{category.name}</span>
+                  <span className="line-clamp-2">{localizeCategoryName(category.name)}</span>
                 </button>
               );
             })}
@@ -193,7 +193,7 @@ export function AddTransactionForm({ wallets, categories, defaultDate }: AddTran
             >
               {wallets.map((wallet) => (
                 <option key={wallet.id} value={wallet.id}>
-                  {wallet.name} - {wallet.currency}
+                  {wallet.name} - IDR
                 </option>
               ))}
             </select>

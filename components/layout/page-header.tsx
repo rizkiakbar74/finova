@@ -20,7 +20,7 @@ export function PageHeader({ title, description, badge, actions, className }: Pa
     >
       <div className="min-w-0">
         {badge ? <Badge variant="success">{badge}</Badge> : null}
-        <h2 className={cn("text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl", badge && "mt-3")}>
+        <h2 className={cn("text-xl font-semibold tracking-normal text-slate-950 sm:text-2xl", badge && "mt-3")}>
           {title}
         </h2>
         {description ? <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">{description}</p> : null}

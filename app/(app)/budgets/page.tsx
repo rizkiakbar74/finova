@@ -14,6 +14,8 @@ import { requireOnboardedUser } from "@/lib/auth/session";
 import { listBudgets } from "@/lib/repositories/budgets";
 import { listCategories } from "@/lib/repositories/categories";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { DEFAULT_CURRENCY } from "@/lib/constants/app";
+import { localizeCategoryName } from "@/lib/utils/localization";
 import {
   createBudgetAction,
   createBudgetItemAction,
@@ -55,16 +57,15 @@ export default async function BudgetsPage({ searchParams }: BudgetsPageProps) {
   const supabase = await createSupabaseServerClient();
   const month = currentMonthRange();
 
-  const [{ data: budgets, error: budgetError }, { data: categories, error: categoryError }, { data: settings }] =
+  const [{ data: budgets, error: budgetError }, { data: categories, error: categoryError }] =
     await Promise.all([
       listBudgets(supabase, user.id),
-      listCategories(supabase, user.id),
-      supabase.from("user_settings").select("currency").eq("user_id", user.id).maybeSingle()
+      listCategories(supabase, user.id)
     ]);
 
   const budgetRows = budgets || [];
   const expenseCategories = (categories || []).filter((category) => category.type === "expense" && !category.is_archived);
-  const currency = settings?.currency || "IDR";
+  const currency = DEFAULT_CURRENCY;
   const activeBudgets = budgetRows.length;
   const totalLimit = budgetRows.reduce((total, budget) => total + budget.limit_amount, 0);
   const totalSpent = budgetRows.reduce((total, budget) => total + budget.spent_amount, 0);
@@ -223,7 +224,7 @@ export default async function BudgetsPage({ searchParams }: BudgetsPageProps) {
                                 className="h-3 w-3 rounded-full"
                                 style={{ backgroundColor: item.category?.color || "#059669" }}
                               />
-                              <span className="font-medium text-slate-950">{item.category?.name || "Kategori"}</span>
+                              <span className="font-medium text-slate-950">{localizeCategoryName(item.category?.name)}</span>
                               {item.progress >= Number(item.alert_threshold) ? <Badge variant="warning">Peringatan</Badge> : null}
                             </div>
                             <p className="text-sm text-muted-foreground">
@@ -245,7 +246,7 @@ export default async function BudgetsPage({ searchParams }: BudgetsPageProps) {
                               >
                                 {expenseCategories.map((category) => (
                                   <option key={category.id} value={category.id}>
-                                    {category.name}
+                                    {localizeCategoryName(category.name)}
                                   </option>
                                 ))}
                               </select>
@@ -289,7 +290,7 @@ export default async function BudgetsPage({ searchParams }: BudgetsPageProps) {
                         >
                           {expenseCategories.map((category) => (
                             <option key={category.id} value={category.id}>
-                              {category.name}
+                              {localizeCategoryName(category.name)}
                             </option>
                           ))}
                         </select>

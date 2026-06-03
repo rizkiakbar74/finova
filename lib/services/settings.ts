@@ -59,7 +59,7 @@ export async function getUserSettings(supabase: SupabaseClient, userId: string) 
     data: {
       profile,
       settings: {
-        currency: settings?.currency || "IDR",
+        currency: "IDR",
         language: settings?.language || "id",
         theme: settings?.theme || "light",
         timezone: settings?.timezone || "Asia/Jakarta",

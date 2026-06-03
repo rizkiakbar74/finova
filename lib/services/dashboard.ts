@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DashboardRange } from "@/lib/validators/finance.schema";
+import { DEFAULT_CURRENCY } from "@/lib/constants/app";
+import { localizeCategoryName } from "@/lib/utils/localization";
 
 interface DashboardWallet {
   id: string;
@@ -120,9 +122,8 @@ export async function getDashboardData(
   userId: string,
   range: DashboardRange
 ): Promise<{ data: DashboardData | null; error: string | null }> {
-  const [{ data: settings }, { data: wallets, error: walletError }, { data: transactions, error: transactionError }] =
+  const [{ data: wallets, error: walletError }, { data: transactions, error: transactionError }] =
     await Promise.all([
-      supabase.from("user_settings").select("currency").eq("user_id", userId).maybeSingle(),
       supabase
         .from("wallets")
         .select("id, name, currency, initial_balance, is_archived")
@@ -159,12 +160,12 @@ export async function getDashboardData(
 
   const walletRows = (wallets || []) as DashboardWallet[];
   const transactionRows = ((transactions || []) as unknown as RawDashboardTransaction[]).map(normalizeTransaction);
-  const currency = settings?.currency || walletRows[0]?.currency || "IDR";
+  const currency = DEFAULT_CURRENCY;
   const primaryWalletIds = new Set(
-    walletRows.filter((wallet) => wallet.currency === currency && !wallet.is_archived).map((wallet) => wallet.id)
+    walletRows.filter((wallet) => !wallet.is_archived).map((wallet) => wallet.id)
   );
   const postedPrimaryTransactions = transactionRows.filter(
-    (transaction) => transaction.status === "posted" && transaction.wallet?.currency === currency
+    (transaction) => transaction.status === "posted"
   );
   const income = postedPrimaryTransactions
     .filter((transaction) => transaction.type === "income")
@@ -208,7 +209,7 @@ export async function getDashboardData(
 
       spendingByCategoryMap.set(categoryId, {
         category_id: categoryId,
-        name: transaction.category?.name || "Uncategorized",
+        name: localizeCategoryName(transaction.category?.name || "Uncategorized"),
         color: transaction.category?.color || "#059669",
         amount,
         percentage: 0
@@ -229,9 +230,9 @@ export async function getDashboardData(
     amount: Number(transaction.amount),
     transaction_date: transaction.transaction_date,
     merchant: transaction.merchant,
-    wallet_name: transaction.wallet?.name || "Wallet",
-    category_name: transaction.category?.name || "Category",
-    currency: transaction.wallet?.currency || currency,
+    wallet_name: transaction.wallet?.name || "Dompet",
+    category_name: localizeCategoryName(transaction.category?.name || "Kategori"),
+    currency,
     status: transaction.status
   }));
 

@@ -1,6 +1,7 @@
 import { completeOnboardingAction } from "@/app/(auth)/actions";
 import { requireUser } from "@/lib/auth/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { DEFAULT_CURRENCY } from "@/lib/constants/app";
 import { AuthAlert } from "@/components/states/auth-alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,7 +42,7 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
     .limit(1);
 
   const fullName = profile?.full_name || user.user_metadata?.full_name || "";
-  const currency = settings?.currency || "IDR";
+  const currency = DEFAULT_CURRENCY;
   const timezone = settings?.timezone || "Asia/Jakarta";
   const hasWallet = Boolean(existingWallets?.length);
 

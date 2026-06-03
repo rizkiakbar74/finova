@@ -20,7 +20,7 @@ for each row execute function public.set_updated_at();
 create table if not exists public.user_settings (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  currency text not null default 'USD',
+  currency text not null default 'IDR',
   language text not null default 'en',
   theme text not null default 'light'
     check (theme in ('light', 'dark', 'system')),
